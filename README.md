@@ -130,14 +130,36 @@ magnitude). Przed użyciem produkcyjnym te progi trzeba przeliczyć na
 własnych danych — tak jak `AdaptiveThresholds` w projekcie Synoptyk
 kalibruje progi z okna danych zamiast trzymać je na sztywno.
 
+## Realna integracja: Analizator Giełdowy v3 (`/api/meta`)
+
+DODANE: zamiast osobnego okna Tkinter na syntetycznych danych demo,
+prawdziwa integracja żyje teraz w repo `analizator-gieldowy-v3` (folder
+obok tego, ten sam poziom katalogów) jako `meta_dynamics_module.py` +
+endpoint `GET /api/meta?ticker=...&period=...` w jego `api.py`.
+
+Ten moduł podłącza tę meta-warstwę do PRAWDZIWEGO `TimdrPacket` z v3
+(mapowanie Λ=trm, τ=flow, ρ=resonance, J=volume - uzasadnienie w
+docstringu `meta_dynamics_module.py` i w README v3), zamiast do
+`analizator3_core`, którego `main.py` w tym repo zakładał, ale który
+nigdy nie istniał (patrz punkt 1 wyżej - to był powód, dla którego
+`gui.py` w ogóle się nie uruchamiał).
+
+`gui.py`/`run.bat` w tym repo nadal działają (na syntetycznej serii
+demo, patrz `load_demo_series()`) - przydatne do testowania samego
+silnika `timdr_meta_dynamics` w izolacji, bez zależności od v3/yfinance -
+ale to już NIE jest zalecana droga do realnej analizy. Do tego służy
+`/api/meta` w `analizator-gieldowy-v3`.
+
 ## Użycie
 
 ```bash
 pip install -r requirements.txt
 python main.py          # uruchamia pipeline na syntetycznej serii demo
                           # (albo na realnych danych, jesli masz
-                          # analizator3_core na PYTHONPATH)
-python gui.py            # albo run.bat na Windows - GUI Tkinter
+                          # analizator3_core na PYTHONPATH - patrz tez
+                          # sekcja o /api/meta wyzej, do realnych danych
+                          # gieldowych)
+python gui.py            # albo run.bat na Windows - GUI Tkinter, demo
 pytest tests/ -q          # 24 testy
 ```
 
