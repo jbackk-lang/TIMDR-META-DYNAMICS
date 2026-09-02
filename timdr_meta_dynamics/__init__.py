@@ -28,6 +28,7 @@ from models.evolution_defect import DefectEvolution
 
 from analysis.meta_map import MetaMap
 from analysis.meta_predict import MetaPredict
+from analysis.meta_trigger import MetaTrigger, MetaTriggerResult
 
 from visualization.meta_phase_diagram import MetaPhaseDiagram
 
@@ -40,5 +41,7 @@ __all__ = [
     "DefectEvolution",
     "MetaMap",
     "MetaPredict",
+    "MetaTrigger",
+    "MetaTriggerResult",
     "MetaPhaseDiagram",
 ]
