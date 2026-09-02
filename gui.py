@@ -32,9 +32,18 @@ class MetaGui(tk.Tk):
             result = run_meta_analysis()
             phases = result["phases"]
 
-            self.output_box.delete("1.0", tk.END)
-            self.output_box.insert(tk.END, "Ostatnie fazy meta-pola:\n\n")
+            trig = result["trigger"]
 
+            self.output_box.delete("1.0", tk.END)
+            if trig["triggered"]:
+                self.output_box.insert(
+                    tk.END,
+                    f"⚠ TRIGGER: {trig['type']} (krok {trig['location']}) - {trig['message']}\n\n",
+                )
+            else:
+                self.output_box.insert(tk.END, f"✓ TRIGGER: brak - {trig['message']}\n\n")
+
+            self.output_box.insert(tk.END, "Ostatnie fazy meta-pola:\n\n")
             for i, phase in enumerate(phases[-50:]):
                 self.output_box.insert(tk.END, f"{i}: {phase}\n")
 

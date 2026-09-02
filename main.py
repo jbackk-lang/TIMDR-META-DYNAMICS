@@ -32,6 +32,7 @@ from timdr_meta_dynamics import (
     FieldEvolution,
     MetaMap,
     MetaPredict,
+    MetaTrigger,
 )
 
 
@@ -129,15 +130,23 @@ def run_meta_analysis(
     predictor = MetaPredict()
     future_states = predictor.simulate_future(states[-1], M_series[-10:], dt)
 
+    # Trigger: zamienia surowa liste "phases" (jedna faza na krok - patrz
+    # docstring MetaMap.detect_transitions()) w JEDNO zdarzenie punktowe -
+    # pierwszy krok, w ktorym pole osiagnelo krytyczna (albo, gdy nigdy
+    # tam nie doszlo, przejsciowa). Patrz analysis/meta_trigger.py.
+    trigger_result = MetaTrigger().analyze(phases)
+
     return {
         "states": states,
         "M_series": M_series,
         "phases": phases,
         "future_states": future_states,
         "map_data": map_data,
+        "trigger": trigger_result.as_dict(),
     }
 
 
 if __name__ == "__main__":
     result = run_meta_analysis()
     print("Fazy meta-pola:", result["phases"][-20:])
+    print("Trigger:", result["trigger"])

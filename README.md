@@ -73,54 +73,24 @@ Poniżej lista konkretnych rzeczy, które były zepsute, i co zrobiłem:
    z tego powodu, ale pokrywają całą logikę pod spodem (`main.py`,
    którą `gui.py` tylko wywołuje).
 
-**24 testy w `tests/test_meta_dynamics.py`** (pytest) — pokrywają każdą z
-powyższych poprawek osobno (m.in. `test_field_evolution_simulate_uzywa_konstruktora`,
+**30 testów** (`tests/test_meta_dynamics.py` + `tests/test_meta_trigger.py`,
+pytest) — pokrywają każdą z powyższych poprawek osobno (m.in.
+`test_field_evolution_simulate_uzywa_konstruktora`,
 `test_meta_map_konstruktor_i_build`, `test_meta_predict_simulate_future_*`), plus
 integracyjny `test_run_meta_analysis_pelny_pipeline_z_demo_seria`, który
 uruchamia cały pipeline od zera bez `analizator3_core` — to jest test,
 który w oryginalnym repo wywalałby się na starcie.
 
-**+7 testów w `tests/test_meta_torsion_and_damping.py`** — patrz sekcja
-"Dodatki po analizie w świetle FLIGHT-TRACKING-TIMDR" niżej. **31 testów
-łącznie.**
-
-## Dodatki po analizie w świetle FLIGHT-TRACKING-TIMDR
-
-Po zbudowaniu i zweryfikowaniu prawdziwej torsji Freneta-Serreta (`frenet_serret()`)
-w `FLIGHT-TRACKING-TIMDR`, przejrzałem to repo pod kątem tych samych
-wniosków. Dwie konkretne rzeczy:
-
-9. **`analysis/meta_torsion.py` (NOWY plik) — `field_torsion()`.**
-   `MetaState.tau` ("transformacja") to skalar WEJŚCIOWY bez żadnego
-   wzoru — `evolution_helix.py` klasyfikuje na nim progami 0.2/1.0,
-   które sam kod nazywa "arbitralnymi wartościami ze szkicu". To NIE
-   jest to samo co matematyczna torsja (skręcenie) krzywej z geometrii
-   różniczkowej, mimo tego samego symbolu τ. `visualization/meta_flow_3d.py`
-   już rysuje trajektorię `(Λ, τ, ρ)` jako krzywą 3D — `field_torsion()`
-   liczy PRAWDZIWĄ krzywiznę i torsję TEJ krzywej, standardowymi wzorami
-   Freneta-Serreta (`kappa = |r'×r''|/|r'|³`, `torsion = ((r'×r'')·r''')/|r'×r''|²`),
-   tą samą metodą co `frenet_serret()` we FLIGHT-TRACKING-TIMDR (wygładzanie
-   Savitzky-Golay przed różniczkowaniem — surowe różnicowanie trzeciej
-   pochodnej wzmacnia szum). Zwraca **nowe** pole (`field_curvature`,
-   `field_torsion`), nie nadpisuje `MetaState.tau` — to świadomie osobny
-   byt, żeby nie mylić etykiety z definicją. Zweryfikowane na helisie
-   kołowej `(Λ,τ,ρ) = (R cos ωt, R sin ωt, ct)` przeciwko zamkniętemu
-   wzorowi (`kappa = Rω²/(R²ω²+c²)`, `torsion = cω/(R²ω²+c²)`, wyprowadzone
-   i sprawdzone przez sympy). **Czy `field_torsion` koreluje z wejściowym
-   τ na realnych danych tego repo — nieznane, nie zmierzone.** Byłby to
-   ciekawy wynik, ale wymaga faktycznego pomiaru, nie założenia.
-
-10. **`analysis/meta_predict.py` — `simulate_future(..., damping=1.0)`.**
-    Wcześniej ekstrapolacja Eulera kumulowała błąd bez ograniczeń (patrz
-    punkt 4 wyżej). Dodano tłumienie w stronę `current_state` (ostatniego
-    realnie zaobserwowanego stanu), tym samym wzorem co `SynoptykV4.forecast()`
-    w projekcie pogodowym: `S_i = damping**i * E_i + (1 - damping**i) * current_state`,
-    gdzie `E_i` to czysta ekstrapolacja Eulera. **Domyślne `damping=1.0`
-    odtwarza dokładnie stare, nietłumione zachowanie** (świadomie — żeby
-    nie zmienić cicho wyniku `main.py` ani istniejących testów). Dla
-    dłuższego horyzontu sensowne jest ustawić `damping` w okolicach 0.85,
-    ale to — jak progi w punkcie 4 — wymaga kalibracji na realnych
-    danych, nie ma tu uniwersalnej stałej.
+**`analysis/meta_trigger.py` (NOWE) — czujnik sygnałowy**, NIE model:
+`MetaTrigger`, dispatcher zamieniający `MetaMap.detect_transitions()`
+(lista faz PER KROK — dosłownie tak zwana w jej własnym docstringu "nie
+wykrywanie przejść w sensie punktowym") w JEDNO zdarzenie: pierwszy
+krok, w którym pole osiągnęło najpoważniejszy monitorowany poziom
+(domyślnie `krytyczna` > `przejsciowa`). Konfigurowalny
+`severity_order` pozwala użyć go też nad `DefectEvolution.track()`
+("globalny defekt" > "rozszerzajaca sie anomalia" > "lokalna anomalia").
+Wpięty do `main.py::run_meta_analysis()` (pole `"trigger"` w wyniku) i
+`gui.py` (linia na górze okna wyników).
 
 ## Struktura katalogów
 
@@ -135,8 +105,8 @@ models/
     evolution_defect.py    — DefectEvolution: ewolucja anomalii (na ρ)
 analysis/
     meta_map.py             — MetaMap: mapa zmian + fazy per krok
-    meta_predict.py          — MetaPredict: ekstrapolacja przyszłego stanu (z tłumieniem)
-    meta_torsion.py           — NOWY: field_torsion() — prawdziwa torsja trajektorii (Λ,τ,ρ)
+    meta_predict.py          — MetaPredict: ekstrapolacja przyszłego stanu
+    meta_trigger.py           — MetaTrigger: fazy per krok -> jedno zdarzenie punktowe (NOWE)
 visualization/
     meta_flow_3d.py           — DODANY: trajektoria 3D (matplotlib)
     meta_phase_diagram.py      — wersja tekstowa (patrz punkt 7 wyżej)
@@ -144,7 +114,6 @@ timdr_meta_dynamics/
     __init__.py                 — publiczne API (re-eksport z powyższych)
 tests/
     test_meta_dynamics.py        — 24 testy (pytest)
-    test_meta_torsion_and_damping.py — 7 testów (field_torsion + damping)
 main.py    — pipeline: dane -> MetaState -> M-seria -> mapa/fazy -> predykcja
 gui.py     — Tkinter GUI nad main.run_meta_analysis()
 run.bat    — uruchamia gui.py na Windows
@@ -204,7 +173,7 @@ python main.py          # uruchamia pipeline na syntetycznej serii demo
                           # sekcja o /api/meta wyzej, do realnych danych
                           # gieldowych)
 python gui.py            # albo run.bat na Windows - GUI Tkinter, demo
-pytest tests/ -q          # 31 testow
+pytest tests/ -q          # 24 testy
 ```
 
 Programowo:
@@ -235,13 +204,8 @@ result["future_states"]    # ekstrapolowane przyszle stany
 Nie jest to zwalidowany model fizyczny ani finansowy. `classify_phase()`
 i progi ewolucji helis/defektów (`evolution_helix.py`, `evolution_defect.py`)
 to arbitralne heurystyki ze szkicu, nie wyniki kalibracji na realnych
-danych. `MetaPredict.simulate_future()` to ekstrapolacja Eulera pierwszego
-rzędu — z domyślnym `damping=1.0` nadal kumuluje błąd bez ograniczeń
-(patrz punkt 10 wyżej), tłumienie jest opcją, nie gwarancją poprawności.
-`field_torsion()` (punkt 9) to prawdziwa matematyka (Frenet-Serret,
-zweryfikowana na helisie z zamkniętym wzorem), ale to, czy niesie
-jakąkolwiek użyteczną informację o realnym polu TIMDR — a w
-szczególności czy koreluje z wejściowym τ — nie zostało zmierzone.
+danych. `MetaPredict.simulate_future()` to prosta ekstrapolacja Eulera
+pierwszego rzędu z kumulującym się błędem, nie model predykcyjny.
 Trafność czegokolwiek tutaj zależy całkowicie od tego, co faktycznie
 podłączysz jako dane wejściowe, i wymaga własnej weryfikacji.
 
