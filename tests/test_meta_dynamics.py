@@ -250,6 +250,14 @@ def test_run_meta_analysis_pelny_pipeline_z_demo_seria():
     assert any(p != "stabilna" for p in result["phases"])
     assert len(result["future_states"]) >= 1
 
+    # DODANE: MetaTrigger (analysis/meta_trigger.py) - pole "trigger"
+    # zawsze obecne, "type" zgodny z jedną z faz albo "none".
+    assert "trigger" in result
+    # MetaTrigger domyślnie monitoruje tylko ("krytyczna", "przejsciowa") -
+    # "stabilna" nigdy nie jest wynikowym typem (nie ma sensu jako "zdarzenie").
+    assert result["trigger"]["type"] in ("przejsciowa", "krytyczna", "none")
+    assert isinstance(result["trigger"]["triggered"], bool)
+
 
 def test_run_meta_analysis_za_krotka_seria_rzuca_czytelny_blad():
     with pytest.raises(ValueError):

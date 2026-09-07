@@ -73,12 +73,24 @@ Poniżej lista konkretnych rzeczy, które były zepsute, i co zrobiłem:
    z tego powodu, ale pokrywają całą logikę pod spodem (`main.py`,
    którą `gui.py` tylko wywołuje).
 
-**24 testy w `tests/test_meta_dynamics.py`** (pytest) — pokrywają każdą z
-powyższych poprawek osobno (m.in. `test_field_evolution_simulate_uzywa_konstruktora`,
+**30 testów** (`tests/test_meta_dynamics.py` + `tests/test_meta_trigger.py`,
+pytest) — pokrywają każdą z powyższych poprawek osobno (m.in.
+`test_field_evolution_simulate_uzywa_konstruktora`,
 `test_meta_map_konstruktor_i_build`, `test_meta_predict_simulate_future_*`), plus
 integracyjny `test_run_meta_analysis_pelny_pipeline_z_demo_seria`, który
 uruchamia cały pipeline od zera bez `analizator3_core` — to jest test,
 który w oryginalnym repo wywalałby się na starcie.
+
+**`analysis/meta_trigger.py` (NOWE) — czujnik sygnałowy**, NIE model:
+`MetaTrigger`, dispatcher zamieniający `MetaMap.detect_transitions()`
+(lista faz PER KROK — dosłownie tak zwana w jej własnym docstringu "nie
+wykrywanie przejść w sensie punktowym") w JEDNO zdarzenie: pierwszy
+krok, w którym pole osiągnęło najpoważniejszy monitorowany poziom
+(domyślnie `krytyczna` > `przejsciowa`). Konfigurowalny
+`severity_order` pozwala użyć go też nad `DefectEvolution.track()`
+("globalny defekt" > "rozszerzajaca sie anomalia" > "lokalna anomalia").
+Wpięty do `main.py::run_meta_analysis()` (pole `"trigger"` w wyniku) i
+`gui.py` (linia na górze okna wyników).
 
 ## Struktura katalogów
 
@@ -94,6 +106,7 @@ models/
 analysis/
     meta_map.py             — MetaMap: mapa zmian + fazy per krok
     meta_predict.py          — MetaPredict: ekstrapolacja przyszłego stanu
+    meta_trigger.py           — MetaTrigger: fazy per krok -> jedno zdarzenie punktowe (NOWE)
 visualization/
     meta_flow_3d.py           — DODANY: trajektoria 3D (matplotlib)
     meta_phase_diagram.py      — wersja tekstowa (patrz punkt 7 wyżej)
