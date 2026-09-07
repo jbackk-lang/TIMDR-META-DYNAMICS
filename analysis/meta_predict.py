@@ -38,20 +38,51 @@ class MetaPredict:
         current_state: MetaState,
         M_series: List[MetaState],
         dt: float,
+        damping: float = 1.0,
     ) -> List[MetaState]:
         """Wielokrokowa ekstrapolacja: dla każdego M w M_series liczy kolejny
         stan na bazie POPRZEDNIO wyekstrapolowanego (nie zawsze current_state).
 
-        UWAGA: to jest prosta, deterministyczna ekstrapolacja Eulera - błąd
-        kumuluje się z każdym krokiem (brak żadnego tłumienia w stronę
-        średniej, w przeciwieństwie np. do SynoptykV4.forecast() w projekcie
-        pogodowym, który tłumi ekstrapolację na dłuższym horyzoncie). Im
-        dłuższe M_series, tym mniej wiarygodny ostatni punkt.
+        NAPRAWIONE (tłumienie, `damping`): oryginalnie to była czysta,
+        nietłumiona ekstrapolacja Eulera - błąd kumulował się bez
+        ograniczeń krok po kroku, w przeciwieństwie np. do
+        SynoptykV4.forecast() w projekcie pogodowym, który tłumi
+        ekstrapolację w stronę lokalnej średniej na dłuższym horyzoncie
+        (patrz analyzer/synoptyk_v4.py w synoptyk-v2.0). Ten sam wzorzec
+        zastosowany tutaj: krok i miesza czystą (nietłumioną) ekstrapolację
+        Eulera E_i z kotwicą - ostatnim realnie zaobserwowanym stanem
+        (`current_state`, jedyny "realny" punkt jaki ta funkcja dostaje,
+        bo M_series to już same delty, nie surowa historia S):
+
+            E_i = S_{i-1} + M_i * dt                 (czysta ekstrapolacja)
+            w   = damping ** i
+            S_i = w * E_i + (1 - w) * current_state    (tłumienie do kotwicy)
+
+        Krótki horyzont (małe i) -> blisko czystej ekstrapolacji Eulera.
+        Długi horyzont (duże i) -> tłumione w stronę current_state zamiast
+        ekstrapolować trend w nieskończoność.
+
+        `damping=1.0` (DOMYŚLNE) odtwarza dokładnie stare, nietłumione
+        zachowanie - zachowane jako domyślne świadomie, żeby nie zmieniać
+        cicho wyniku main.py/istniejących testów. Dla realnego użycia na
+        dłuższym horyzoncie sensowne jest `damping` w okolicach 0.85 (ta
+        sama domyślna wartość co w SynoptykV4.forecast()), ale to trzeba
+        by skalibrować na realnych danych, tak samo jak progi w
+        evolution_helix.py/classify_phase() - nie ma tu jednej uniwersalnej
+        stałej.
         """
         states: List[MetaState] = [current_state]
+        extrapolated = current_state
 
-        for M in M_series:
-            next_state = self.predict_next(states[-1], M, dt)
-            states.append(next_state)
+        for i, M in enumerate(M_series, start=1):
+            extrapolated = self.predict_next(extrapolated, M, dt)
+            w = damping ** i
+            blended = MetaState(
+                Lambda=w * extrapolated.Lambda + (1 - w) * current_state.Lambda,
+                tau=w * extrapolated.tau + (1 - w) * current_state.tau,
+                rho=w * extrapolated.rho + (1 - w) * current_state.rho,
+                J=w * extrapolated.J + (1 - w) * current_state.J,
+            )
+            states.append(blended)
 
         return states
