@@ -29,6 +29,9 @@ from models.evolution_defect import DefectEvolution
 from analysis.meta_map import MetaMap
 from analysis.meta_predict import MetaPredict
 from analysis.meta_trigger import MetaTrigger, MetaTriggerResult
+from analysis.meta_measure import (
+    event_density, feasibility, measure, measured_state, regime, relative_to_background,
+)
 
 from visualization.meta_phase_diagram import MetaPhaseDiagram
 
@@ -44,4 +47,10 @@ __all__ = [
     "MetaTrigger",
     "MetaTriggerResult",
     "MetaPhaseDiagram",
+    "event_density",
+    "feasibility",
+    "measure",
+    "measured_state",
+    "regime",
+    "relative_to_background",
 ]

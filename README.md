@@ -107,6 +107,7 @@ analysis/
     meta_map.py             — MetaMap: mapa zmian + fazy per krok
     meta_predict.py          — MetaPredict: ekstrapolacja przyszłego stanu
     meta_trigger.py           — MetaTrigger: fazy per krok -> jedno zdarzenie punktowe (NOWE)
+    meta_measure.py            — mierzalne τ, ρ i reżim z sygnału (1:1 z GIA-TIMDR, walidowane)
 visualization/
     meta_flow_3d.py           — DODANY: trajektoria 3D (matplotlib)
     meta_phase_diagram.py      — wersja tekstowa (patrz punkt 7 wyżej)
@@ -114,6 +115,7 @@ timdr_meta_dynamics/
     __init__.py                 — publiczne API (re-eksport z powyższych)
 tests/
     test_meta_dynamics.py        — 24 testy (pytest)
+    test_meta_measure.py          — 5 testów: wzorcowe (bit w bit z GIA-TIMDR), reżimy, reguła wykonalności
 main.py    — pipeline: dane -> MetaState -> M-seria -> mapa/fazy -> predykcja
 gui.py     — Tkinter GUI nad main.run_meta_analysis()
 run.bat    — uruchamia gui.py na Windows
@@ -186,11 +188,41 @@ result["phases"]          # lista faz per krok M-serii
 result["future_states"]    # ekstrapolowane przyszle stany
 ```
 
+## Mierzalne τ i ρ (`analysis/meta_measure.py`)
+
+Dotąd τ i ρ były liczbami podawanymi z zewnątrz. Teraz można je **zmierzyć z sygnału** — funkcje przeniesione
+1:1 z `GIA-TIMDR/core/transition_params.py` (zgodność bit w bit pilnowana `tests/test_meta_measure.py`):
+
+- **τ** — czas wygaszania zdarzenia: autokorelacja obwiedni pasma spada poniżej 1/e [s];
+- **ρ = D = η/(1−η)**, η = (E e)² / E e² — wypełnienie obwiedni (bez progu); rośnie z f·τ (częstość × czas
+  wygaszania), dla rzadkich impulsów ponad szumem η ≈ 2fτ;
+- **reżim**: D < 0,3 cząsteczka (rzadkie błyski), 0,3–3 pakiet, D > 3 fala (szum gaussowski ≈ 3,7);
+- `feasibility()` — reguła wykonalności (N_cyk, L_koh, D, kotwica), liczona **przed** testem;
+- `measured_state(x, fs, lo, hi, Lambda, J, rho_background=...)` — `MetaState` z mierzonymi τ i ρ.
+
+```python
+from timdr_meta_dynamics import measure, measured_state
+measure(x, fs=25600, lo=1000, hi=12000)   # {'tau':..., 'rho':..., 'eta':..., 'rate':..., 'rezim': 'czasteczka'}
+```
+
+**Walidacja (pre-rejestrowana, `GIA-TIMDR/docs/geometry/`):**
+
+| Test | Wynik |
+|---|---|
+| PRONOSTIA_REGIME_PATH_v0_1 — 11 nieoglądanych łożysk do zniszczenia | **SUPPORTED**: D spada wzdłuż życia w 9/11 (pole → cząsteczka), na końcu wraca ≥ 1,2 × minimum w 7/11 (ku fali). D zachowuje się jak kurtoza — remis, nie przewaga |
+| LANL_MODAL_ANCHOR_v0_3, H3 — rama budynku, wymuszenie szerokopasmowe | **NOT SUPPORTED**: D nie śledziło ciężkości uszkodzenia |
+
+Wniosek: ρ interpretować **względem tła** tej samej maszyny lub konstrukcji (`relative_to_background`), a nie jako
+liczbę bezwzględną; przy wymuszeniu szerokopasmowym D mierzy głównie wymuszenie. `rate` (liczenie maksimów) jest
+tylko pomocnicze — zawodzi przy gęstych zdarzeniach, dlatego ρ liczone jest z wypełnienia. Progi M
+(`classify_phase`) pozostają niekalibrowane — to się nie zmieniło.
+
 ## Integracja z innymi projektami TIMDR
 
-- **Z GIA-TIMDR**: docelowo wspólne definicje Λ–τ–ρ–J (nie zweryfikowane
-  tutaj — ten plik nie importuje niczego z GIA-TIMDR, to deklaracja
-  zamiaru z oryginalnego szkicu, nie zaimplementowana integracja).
+- **Z GIA-TIMDR**: τ i ρ mają teraz wspólną, mierzalną definicję
+  (`analysis/meta_measure.py`, kopia 1:1 z `core/transition_params.py`,
+  bez importu — repo niezależne). Λ i J nadal nie mają definicji
+  pomiarowej.
 - **Z Analizatorem Giełdowym 3.0**: `main._load_market_series()` — patrz
   punkt 1 wyżej, opcjonalna zależność z fallbackiem na dane demo.
 - **Z innymi analizatorami (finanse/astro/fusion)**: `build_meta_states_from_market()`
