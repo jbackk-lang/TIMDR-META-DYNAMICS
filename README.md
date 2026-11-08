@@ -259,3 +259,7 @@ MIT — patrz [LICENSE](LICENSE).
 - [Kod eksperymentu](experiments/compression_idr_experiment.py) — odtwarzalny skrypt Python, bez zewnętrznych zależności.
 
 Wynik ma status eksperymentu syntetycznego; nie potwierdza okresowości ani hipotezy fizycznej.
+
+## Adaptacyjna ochrona reprezentacji (AIRP)
+
+[Specyfikacja AIRP](docs/Adaptive_Representation_Protection_AIRP.md) — hipoteza/architektura łącząca rotację klucza, zmienność reprezentacji ciphertextu i niezmiennik odzyskiwalności treści. Prototyp rotacji znajduje się w repozytorium Helix-Lock.
