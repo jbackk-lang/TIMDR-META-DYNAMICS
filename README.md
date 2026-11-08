@@ -252,3 +252,10 @@ MIT — patrz [LICENSE](LICENSE).
 ## Nowa hipoteza badawcza: dynamika reprezentacji informacji
 
 [IDR — Dynamika reprezentacji informacji pod wpływem kompresji](docs/Information_Representation_Dynamics_Compression.md) — protokół badający rozmiar, entropię histogramu bajtów, zmianę rozkładu, odwracalność i ewentualną okresowość kolejnych reprezentacji. Status: hipoteza/protokół, nie aksjomat ani wynik eksperymentalny.
+
+### IDR — pierwsze wyniki eksperymentu
+
+- [Raport wyników z 2026-11-08](docs/IDR_Experiment_Results_2026-11-08.md) — cztery syntetyczne próbki, 20 warstw zlib, dokładna kontrola odzyskania i obserwable reprezentacji.
+- [Kod eksperymentu](experiments/compression_idr_experiment.py) — odtwarzalny skrypt Python, bez zewnętrznych zależności.
+
+Wynik ma status eksperymentu syntetycznego; nie potwierdza okresowości ani hipotezy fizycznej.
