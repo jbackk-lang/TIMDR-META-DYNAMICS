@@ -61,3 +61,16 @@ Tempo zmian opisuje przejścia wersji i zdarzenia, nie „ilość informacji”.
 5. Audyt zarządzania kluczami, backupów i retencji.
 
 Dopiero po testach integracyjnych i niezależnym przeglądzie bezpieczeństwa można rozważać wdrożenie produkcyjne.
+
+
+## Rozszerzenie implementacyjne: trwały rejestr i CounterLock
+
+Helix-Lock zawiera teraz również prototyp:
+- `helix_pro.counter_lock.rotate_counter_blob()` — rotuje klucz blobu CounterLock, zachowując odszyfrowany payload i licznik;
+- `helix_pro.airp_store.AIRPStore` — trwały rejestr SQLite z wersją, key ID, SHA-256 ciphertextu, transakcyjnym compare-and-swap oraz historią zdarzeń.
+
+Rejestr odrzuca zatwierdzenie rotacji, gdy wersja lub hash poprzedniej reprezentacji nie zgadza się z oczekiwanym stanem. Jest to ochrona przed przypadkowym/starym zapisem i konkurencyjnymi aktualizacjami w granicach zaufanej bazy.
+
+**Ograniczenie threat modelu:** lokalna baza SQLite nie chroni przed napastnikiem, który może podmienić zarówno plik danych, jak i bazę/rejestr oraz backupy. Odporność na rollback wymaga niezależnego, chronionego rejestru (np. usługi transakcyjnej/append-only z oddzielnymi uprawnieniami). Zapis ciphertextu i metadanych SQLite nie jest jedną transakcją; aplikacja musi obsłużyć staging, atomowe przełączenie i odzyskiwanie po awarii.
+
+README Helix-Lock zawiera instrukcję „gdzie co jest i jak używać”, przykłady rotacji, rejestru, CounterLock oraz komendy testowe.
