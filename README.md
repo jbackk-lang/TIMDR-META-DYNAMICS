@@ -248,3 +248,7 @@ podłączysz jako dane wejściowe, i wymaga własnej weryfikacji.
 ## Licencja
 
 MIT — patrz [LICENSE](LICENSE).
+
+## Nowa hipoteza badawcza: dynamika reprezentacji informacji
+
+[IDR — Dynamika reprezentacji informacji pod wpływem kompresji](docs/Information_Representation_Dynamics_Compression.md) — protokół badający rozmiar, entropię histogramu bajtów, zmianę rozkładu, odwracalność i ewentualną okresowość kolejnych reprezentacji. Status: hipoteza/protokół, nie aksjomat ani wynik eksperymentalny.
