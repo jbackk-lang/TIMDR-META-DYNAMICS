@@ -27,7 +27,7 @@ def make_datasets():
       "zeros":bytes(4096),
       "periodic_text":(b"TIMDR chronoprocess information dynamics; "*120)[:4096],
       "random_seed_20261108":raw_random,
-      "already_zlib_compressed_random":zlib.compress(bytes(random.Random(20261109).randrange(256) for _ in range(4096)),9),
+      "already_zlib_compressed_random":zlib.compress(compressed_source,9),
     }
 
 def run(rounds=20):
