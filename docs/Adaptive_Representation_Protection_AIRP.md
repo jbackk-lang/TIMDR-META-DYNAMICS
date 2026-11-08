@@ -74,3 +74,18 @@ Rejestr odrzuca zatwierdzenie rotacji, gdy wersja lub hash poprzedniej reprezent
 **Ograniczenie threat modelu:** lokalna baza SQLite nie chroni przed napastnikiem, który może podmienić zarówno plik danych, jak i bazę/rejestr oraz backupy. Odporność na rollback wymaga niezależnego, chronionego rejestru (np. usługi transakcyjnej/append-only z oddzielnymi uprawnieniami). Zapis ciphertextu i metadanych SQLite nie jest jedną transakcją; aplikacja musi obsłużyć staging, atomowe przełączenie i odzyskiwanie po awarii.
 
 README Helix-Lock zawiera instrukcję „gdzie co jest i jak używać”, przykłady rotacji, rejestru, CounterLock oraz komendy testowe.
+
+
+##  Implementation status: Helix-Lock GUI integration (2026-11)
+
+W repozytorium `jbackk-lang/Helix-Lock` podłączono lokalny rejestr AIRP do GUI dla formatów HLXN i HLXP:
+
+- po szyfrowaniu GUI rejestruje hash szyfrogramu, wersję i losowy key ID w `~/.helix_lock/airp.sqlite3` (Windows: katalog profilu użytkownika);
+- przed odszyfrowaniem sprawdza zgodność bieżącego pliku z rejestrem i odmawia, gdy wpis nie istnieje albo hash jest inny;
+- ponowne szyfrowanie do tej samej ścieżki przesuwa wersję rejestru transakcyjnie;
+- checkbox AIRP jest domyślnie włączony; świadome wyłączenie umożliwia obsługę starszych/przeniesionych plików, ale omija kontrolę rejestru;
+- format CounterLock (HLXC) jest na razie wyłączony z tej integracji, ponieważ jego dotychczasowy przepływ odszyfrowania nadpisuje plik i wymaga koordynacji transakcyjnej licznika z rejestrem.
+
+Pliki implementacji: `helix_pro/airp_store.py`, `helix_pro_gui.py`; testy: `tests/test_airp_store.py`, `tests/test_helix_pro_gui.py`; workflow: `.github/workflows/airp-tests.yml`.
+
+**Granica gwarancji:** SQLite zapewnia lokalną trwałość i ochronę przed podmianą pliku przy zachowanej, zaufanej bazie. Nie zabezpiecza przed rollbackiem, jeśli atakujący może podmienić jednocześnie szyfrogram, bazę i backup. Rejestr jest przypisany do lokalnej ścieżki; przenoszenie pliku wymaga kontrolowanej migracji wpisu. Testy zostały dodane do GitHub Actions, ale ich wynik należy potwierdzić w zakładce Actions po uruchomieniu workflow.
