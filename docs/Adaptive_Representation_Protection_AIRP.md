@@ -124,4 +124,4 @@ W Helix-Lock dodano następujące elementy wykonawcze:
 
 **Warunek bezpieczeństwa:** sam lokalny łańcuch i lokalny podpis nie dają odporności na cofnięcie całej bazy. Funkcja pełnej weryfikacji zewnętrznej działa dopiero po podłączeniu niezależnie administrowanego `TrustAnchor`, zachowującego ostatni checkpoint poza hostem. Repozytorium udostępnia kontrakt i testowy adapter pamięciowy, nie deklaruje jeszcze wdrożonej usługi zewnętrznej.
 
-Testy: `tests/test_airp_ledger.py` oraz `tests/test_airp_recovery.py`. Aktualny CI dla Pythona 3.11 i 3.12: 87 testów na każdej wersji, zakończonych powodzeniem.
+Testy: `tests/test_airp_ledger.py` oraz `tests/test_airp_recovery.py`. Aktualny CI dla Pythona 3.11 i 3.12: 92 testów na każdej wersji, zakończonych powodzeniem.
