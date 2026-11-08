@@ -89,3 +89,23 @@ W repozytorium `jbackk-lang/Helix-Lock` podłączono lokalny rejestr AIRP do GUI
 Pliki implementacji: `helix_pro/airp_store.py`, `helix_pro_gui.py`; testy: `tests/test_airp_store.py`, `tests/test_helix_pro_gui.py`; workflow: `.github/workflows/airp-tests.yml`.
 
 **Granica gwarancji:** SQLite zapewnia lokalną trwałość i ochronę przed podmianą pliku przy zachowanej, zaufanej bazie. Nie zabezpiecza przed rollbackiem, jeśli atakujący może podmienić jednocześnie szyfrogram, bazę i backup. Rejestr jest przypisany do lokalnej ścieżki; przenoszenie pliku wymaga kontrolowanej migracji wpisu. Testy zostały dodane do GitHub Actions, ale ich wynik należy potwierdzić w zakładce Actions po uruchomieniu workflow.
+
+
+## AIRP — transakcje plikowe i odzyskiwanie po awarii
+
+W Helix-Lock dodano `AIRPFileTransaction` (`helix_pro/airp_transaction.py`) jako warstwę koordynującą trwały rejestr SQLite z plikiem szyfrogramu. Ponieważ system plików i SQLite nie współdzielą jednej transakcji, protokół wykorzystuje dziennik boczny i staging:
+
+1. Sprawdź, czy plik docelowy odpowiada zarejestrowanej starej wersji.
+2. Zapisz dziennik transakcji z hashami starej i nowej reprezentacji oraz ścieżką stagingu.
+3. Zapisz nowy szyfrogram do pliku stagingowego w tym samym katalogu i wymuś zapis na dysk.
+4. Zatwierdź nową wersję w SQLite przez compare-and-swap.
+5. Atomowo podmień plik docelowy i usuń dziennik.
+
+Procedura odzyskiwania rozpoznaje trzy stany:
+- **stara wersja w rejestrze:** transakcja nie została zatwierdzona — staging jest odrzucany;
+- **nowa wersja w rejestrze:** transakcja została zatwierdzona — podmiana jest dokańczana ze stagingu;
+- **stan niejednoznaczny:** operacja jest zatrzymywana, pliki pozostają do ręcznej analizy.
+
+To zabezpiecza przed typowymi przerwami procesu pomiędzy zatwierdzeniem rejestru a podmianą pliku. Nie zapewnia odporności na napastnika mogącego jednocześnie podmienić bazę, dziennik i staging. Nie przechowuje kluczy ani plaintextu; wejściowy nowy szyfrogram musi być wcześniej poprawnie utworzony i zweryfikowany przez warstwę kryptograficzną.
+
+Testy protokołu: `tests/test_airp_transaction.py` (normalny commit, awaria przed podmianą, odrzucenie niezatwierdzonej transakcji, wykrycie stanu niejednoznacznego).
