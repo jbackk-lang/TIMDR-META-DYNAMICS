@@ -109,3 +109,19 @@ Procedura odzyskiwania rozpoznaje trzy stany:
 To zabezpiecza przed typowymi przerwami procesu pomiędzy zatwierdzeniem rejestru a podmianą pliku. Nie zapewnia odporności na napastnika mogącego jednocześnie podmienić bazę, dziennik i staging. Nie przechowuje kluczy ani plaintextu; wejściowy nowy szyfrogram musi być wcześniej poprawnie utworzony i zweryfikowany przez warstwę kryptograficzną.
 
 Testy protokołu: `tests/test_airp_transaction.py` (normalny commit, awaria przed podmianą, odrzucenie niezatwierdzonej transakcji, wykrycie stanu niejednoznacznego).
+
+
+## Niezależny łańcuch zaufania AIRP — implementacja Helix-Lock
+
+W Helix-Lock dodano następujące elementy wykonawcze:
+
+- `helix_pro.airp_ledger.AIRPIntegrityLedger`: globalnie sekwencjonowany łańcuch zdarzeń SHA-256 z odwołaniem każdego wpisu do poprzedniego.
+- Punkty kontrolne podpisywane Ed25519; weryfikator wymaga przypiętego klucza publicznego.
+- Kontrakt `TrustAnchor`: zewnętrzny rejestr ma atomowo odrzucać cofnięcie numeru sekwencji oraz rozwidlenie tego samego numeru.
+- Weryfikacja wykrywa uszkodzenie łańcucha, cofnięcie lokalnej bazy poniżej zewnętrznego checkpointu i rozbieżność historii.
+- `helix_pro.airp_counter.AIRPCounterLock`: wiąże zaakceptowany licznik CounterLock z historią zdarzeń; powtórzony lub niższy licznik jest odrzucany.
+- `helix_pro.airp_recovery`: koperta klucza danych AES-256-GCM pod niezależnym 256-bitowym kluczem odzyskiwania; identyfikator obiektu i klucza są uwierzytelnionym AAD.
+
+**Warunek bezpieczeństwa:** sam lokalny łańcuch i lokalny podpis nie dają odporności na cofnięcie całej bazy. Funkcja pełnej weryfikacji zewnętrznej działa dopiero po podłączeniu niezależnie administrowanego `TrustAnchor`, zachowującego ostatni checkpoint poza hostem. Repozytorium udostępnia kontrakt i testowy adapter pamięciowy, nie deklaruje jeszcze wdrożonej usługi zewnętrznej.
+
+Testy: `tests/test_airp_ledger.py` oraz `tests/test_airp_recovery.py`. Aktualny CI dla Pythona 3.11 i 3.12: 86 testów na każdej wersji, zakończonych powodzeniem.
